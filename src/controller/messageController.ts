@@ -31,11 +31,14 @@ import users from "../models/user";
                 const Message = await messages.create(newMessage);
                 // const user = await users.find();
                 
-                const chat = chats.updateOne({_id:message[0]._id},{$push:{messages:Message._id}});
-                // return Message;
+                // const chat = chats.updateOne({_id:message[0]._id},{$push:{messages:Message._id}});
+                // // return Message;
                 const newChat = await chats.find({_id:message[0]._id});
-                console.log("chat:", newChat[0].messages);
-                
+                let messagesLocal = newChat[0].messages; 
+                console.log("messagesLocal:", messagesLocal);
+                messagesLocal.push(Message.get('_id'));
+                console.log("messagesLocal:", messagesLocal);
+                const chat = await chats.updateOne({_id:message[0]._id},{$set:{messages:messagesLocal}});
                 // // const Message = await messages.create(message);
                 return Message;
             } catch (error) {
