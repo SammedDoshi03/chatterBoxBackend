@@ -67,7 +67,7 @@ export default class Server {
         });
 
         this.app.get("/api/v1/chat/getAllChats", responseToPostman((req: Request, res: Response) => {
-
+            // console.log("GET /api/v1/chat/getAllChats");
             return chatController.getAllChats();
         }));
        
@@ -100,9 +100,138 @@ export default class Server {
             
             return chatController.getChatById(req.body);
         }));
-        this.app.post("/addUser", responseToPostman((req: Request, res: Response) => {
-            return userController.createUser(req.body);
-        }))
+        this.app.get("/api/v1/chat/getChatByChatID/:id", responseToPostman((req: Request, res: Response) => {
+            return chatController.getChatByChatID(req.params.id);
+        }));
+            
+
+        /**
+          * creating a user
+          */
+         this.app.post(
+            "/addUser",
+            responseToPostman(async (req: Request, resp: Response) => {
+                // create joi schema
+                const schema = Joi.object({
+                    name: Joi.string().required().min(5),
+                    phone: Joi.string().required(),
+                    password: Joi.string().required().min(8),
+                });
+                console.log(req.body)
+                // validating req.body
+                await schema.validateAsync(req.body);
+                // creating user
+                // @ts-ignore
+                const user =  await userController.create(req.body);
+                if(user) {
+                       return "User created";
+                } else {
+                       throw new Error("User is not created");
+                }
+            }),
+        );
+
+        /**
+         * authorization
+         */
+         this.app.post(
+            "/users/auth",
+            responseToPostman(async (req: Request, resp: Response) => {
+                // create joi schema
+                const schema = Joi.object({
+                    phone: Joi.string().required(),
+                    password: Joi.string().required().min(8),
+                });
+
+                // validating req.body
+                await schema.validateAsync(req.body);
+
+                // authenticate user
+                const user = await userController.auth(req.body.phone, req.body.password);
+                if(user) {
+                    // set the user session
+                    // @ts-ignore
+                    req.session.user = user;
+                    // @ts-ignore
+                    req.session.admin = null;
+                    return "User authenticated successfully";
+                } else {
+                    throw new Error("User is not authenticated");
+                }
+            }),
+        );
+         
+         // logging out user 
+         this.app.post(
+             "/logout",
+             responseToPostman((req: Request) => {
+                 // destroy session
+                 req.session.destroy(() => {});
+ 
+                 // return success to user/admin
+                 return "User has logged out";
+             }),
+         );
+
+         /**
+         * Show User Profile
+         *  {string} "Userid vai Session"
+         *  return "User Profile"
+         */
+        this.app.get("/users/profile", responseToPostman(async (req: Request, res: Response) => {
+            //@ts-ignore
+            if(req.session && req.session.user)
+            {
+                // @ts-ignore
+                return await userController.getUserProfile(req.session.user._id);
+            }
+            else {
+                throw new Error("User need to be logged in");
+            }
+        }));
+
+        /**
+         * Changing User Name
+         */
+        this.app.put("/users/changeName",responseToPostman(async (req: Request, resp: Response) => {
+            //authenticating the user
+            //@ts-ignore
+            if(!(req.session && req.session.user)){
+                throw new Error("User Not Authenticated")
+            }
+            //creating Joi schema
+            const schema = Joi.object({
+                uid:Joi.string().required(),
+                name:Joi.string().required()
+            });
+            //validate joi schema
+            await schema.validateAsync(req.body);
+            //Updating Name
+            //@ts-ignore
+            return profileController.updateName(req.body.uid,req.body.name);
+        }));
+
+        /**
+         * Changing User Profile Photo
+         */
+        this.app.put("/users/changePhoto",responseToPostman(async (req: Request, resp: Response) => {
+            //authenticating the user
+            //@ts-ignore
+            if(!(req.session && req.session.user)){
+                throw new Error("User Not Authenticated")
+            }
+            //creating Joi schema
+            const schema = Joi.object({
+                uid:Joi.string().required(),
+                avatar:Joi.string().required()
+            });
+            //validate joi schema
+            await schema.validateAsync(req.body);
+            //Updating Name
+            //@ts-ignore
+            return profileController.updatePhoto(req.body.uid,req.body.avatar);
+        }));
+
     }
 
     /**

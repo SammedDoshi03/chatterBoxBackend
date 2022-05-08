@@ -2,7 +2,9 @@
  * User Controller for user related operations
  */
 
-import user, { IUser } from "../models/user";
+import user, { IUser } from "../models/user"
+import Bcrypt from "../services/bcrypt";
+import mongoose from "mongoose";
 
 
 export default class userController {
@@ -14,14 +16,14 @@ export default class userController {
      * @param CreateUser
      */
 
-    static async createUser(CreateUser) {
-        try {
-            const User = await user.create(CreateUser);
-            return User;
-        } catch (error) {
-            throw error;
+     static async create(body:any): Promise<IUser> {
+        const hash = await Bcrypt.hashing(body.password);
+        const data = {
+            ...body,
+            password: hash,
+        };
+        return user.create(data);
         }
-    }
 
     /**
      * getting all users
@@ -52,18 +54,48 @@ export default class userController {
     }
 
     /**
-     * get remaining users for a given user
-     * @param id
-     * @returns {Promise<*>}
+     * 
+     * @param phone
+     * @param password 
+     * @returns 
      */
-
-    // static async getRemainingUsers(id) {
-    //     try {
-    //         const user = await User.find(id);
-    //     } catch (error) {
-    //         throw error;
-    //     }
-    // }
+     static async auth(phone:string,password:string): Promise<IUser> {
+        //fetch data from database
+        const users =  await user.findOne({phone: phone}).lean()
+        // check user is exists or not
+        if (users)
+        {
+                //comparing the password with hash
+            const res= await Bcrypt.comparing(password, users.password);
+                //check correct or not
+                if(res) return users;
+                else throw new Error("wrong password")
+        }
+         throw new Error("user does not exist");
+       
+    }
+    
+    /**
+     * Get User Profile
+     * @param _id
+     * @returns user
+     */
+     static async getUserProfile(_id) {
+        const users = await user.aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(_id)
+                },
+            },
+            {
+                $project:{
+                    "password": 0,
+                }
+            },
+        ]).exec();
+        if(users) return users;
+        else throw new Error("user not exists");
+    }
 
 
 

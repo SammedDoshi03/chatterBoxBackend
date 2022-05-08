@@ -17,6 +17,7 @@ import {generate} from "shortid"
     time: Date;
     conType: string;
     msgType: string;
+    parent: string;
  }
  
  const schema = new Schema({
@@ -48,6 +49,10 @@ import {generate} from "shortid"
     type:{
         type: String,
         required:true
+    },
+    parent:{
+        type: String,
+        // required:true   
     }
  },
     {

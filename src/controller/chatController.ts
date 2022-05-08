@@ -4,7 +4,7 @@
 
 import chats, { IChat } from "../models/chat";
 import user from "../models/user";
-import mongoose from "mongoose";
+import mongoose, { model } from "mongoose";
 
  
  export default class chatController {
@@ -14,7 +14,7 @@ import mongoose from "mongoose";
     */
     static async getAllChats() : Promise<IChat[]> {
         try {
-            const chat = await chats.aggregate([
+            const chat = chats.aggregate([
                 {
                     $lookup: {
                         from: "messages",
@@ -30,8 +30,10 @@ import mongoose from "mongoose";
                         foreignField: "_id",
                         as: "users"
                     }
-                }
+                },
             ]).exec();
+
+            // const chat = await chats.find().populate('users').populate('messages').populate('messages.parent').exec();
             return chat;
         } catch (error) {
             throw error;
@@ -56,24 +58,11 @@ import mongoose from "mongoose";
                
            const chat = chats.filter(chat => chat.users[0]._id.toString() === newId.toString() && chat.users[1]._id.toString() === newId2.toString());
            console.log("chat:", newId2);
-           
            return chat;
         } catch (error) {
             throw error;
         }
     } 
-
-    /**
-     * get a chat by id
-     * @param id
-     */
-    static async getUserByChatId(id) {
-        try {
-            const chat = await chats.findById(id).exec();
-        } catch (error) {
-            throw error;
-        }
-    }
 
 
     /**
@@ -100,5 +89,60 @@ import mongoose from "mongoose";
             throw error;
         }
     } 
-       
+
+    /**
+     * get chat by chat id
+     * @param id
+     */
+    static async getChatByChatID(id) {
+        const newId = new mongoose.Types.ObjectId(id);
+        try {
+            const chat = await chats.find({"_id":newId})
+            .populate('users')
+            .populate({
+                path: 'messages',
+                populate: {
+                    path: 'parent',
+                    model: 'messages',
+                }
+            })
+            .exec();
+
+            // const chat = chats.aggregate([
+            //     {
+            //         $match: {
+            //             "_id": newId
+            //         }
+            //     },
+            //     {
+            //         $lookup: {
+            //             from: "messages",
+            //             localField: "messages",
+            //             foreignField: "_id",
+            //             as: "messages"
+            //         },
+            //     },
+            //     {
+            //         $lookup: {
+            //             from: "messages",
+            //             localField: "messages.parent",
+            //             foreignField: "_id",
+            //             as: "parent"
+            //         }
+            //     },
+            //     {
+            //         $lookup: {
+            //             from: "users",
+            //             localField: "users",
+            //             foreignField: "_id",
+            //             as: "users"
+            //         }
+            //     },
+            // ]).exec();
+
+            return chat;
+        } catch (error) {
+            throw error;
+        }
+    }
  }

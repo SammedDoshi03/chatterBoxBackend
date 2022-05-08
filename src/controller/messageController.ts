@@ -6,10 +6,12 @@ import messages, { IMessage } from "../models/message";
 import chatController from "./chatController";
 import chats from "../models/chat";
 import users from "../models/user";
+import mongoose from "mongoose";
 
 
  
  export default class messageController {
+        
     
         /**
         * creating a new message
@@ -17,6 +19,12 @@ import users from "../models/user";
         */
     
         static async createMessage(message) {
+            let parent;
+            if(message.parent) {
+             parent = new mongoose.Types.ObjectId(message.parent);
+            } else {
+             parent = "";
+            }
             try {
                 console.log("display:", message);
                 const newMessage = {
@@ -25,8 +33,8 @@ import users from "../models/user";
                     type: message[0].type,
                     time: message[0].time,
                     conType : message[0].conType,
-                    msgType : message.msgType
-
+                    msgType : message.msgType,
+                    parent : parent,
                 }
                 const Message = await messages.create(newMessage);
                 // const user = await users.find();
@@ -48,6 +56,16 @@ import users from "../models/user";
             }
         }
 
+        // static async createMessage(message) {
+        //     try {
+        //         const Message = await messages.create(message);
+        //         return Message;
+        //     } catch (error) {
+        //         throw error;
+        //     }
+        // }
+
+
         /**
          * getting all messages
          * @param id
@@ -56,7 +74,23 @@ import users from "../models/user";
         
         static async getAllMessages(id) : Promise<IMessage[]> {
             try {
-                const message = await messages.find({messageId:id});
+                const message = messages.aggregate([
+                    {
+                        $match: {
+                            _id: id
+                        },
+                    },
+                    {
+                        $lookup: {
+                            from: "messages",
+                            localField: "parent",
+                            foreignField: "_id",
+                            as: "parent"
+                        }
+                    },
+                ]).exec();
+
+                // const message = await messages.find({messageId:id}).populate('messages').exec();
                 return message;
             } catch (error) {
                 throw error;
