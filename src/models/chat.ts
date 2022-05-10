@@ -17,6 +17,7 @@ import { IUser } from "./user";
     time: Date;
     conType: string;
     title: string;
+    noOfUnreadMessages: number;
  }
  
  const schema = new Schema({
@@ -48,6 +49,10 @@ import { IUser } from "./user";
     title:{
         type: String,
     },
+    noOfUnreadMessages:{
+        type: Number,
+        default: 0
+    }
  },
     {
         timestamps: true

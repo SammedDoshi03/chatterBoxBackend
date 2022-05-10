@@ -18,6 +18,7 @@ import {generate} from "shortid"
     conType: string;
     msgType: string;
     parent: string;
+    seen : boolean;
  }
  
  const schema = new Schema({
@@ -53,7 +54,10 @@ import {generate} from "shortid"
     parent:{
         type: String,
         // required:true   
-    }
+    },
+    seen : {
+        type: Boolean,
+    },
  },
     {
         timestamps: true

@@ -23,10 +23,10 @@ import mongoose from "mongoose";
             if(message.parent) {
              parent = new mongoose.Types.ObjectId(message.parent);
             } else {
-             parent = "";
+             parent="6277a375bb6bdf65917b6d54";
             }
             try {
-                console.log("display:", message);
+                // console.log("display:", message);
                 const newMessage = {
                     message: message.value,
                     userName: message[0].title,
@@ -35,20 +35,19 @@ import mongoose from "mongoose";
                     conType : message[0].conType,
                     msgType : message.msgType,
                     parent : parent,
+                    seen : true
                 }
                 const Message = await messages.create(newMessage);
-                // const user = await users.find();
-                
-                // const chat = chats.updateOne({_id:message[0]._id},{$push:{messages:Message._id}});
-                // // return Message;
-                const newChat = await chats.find({_id:message[0]._id});
+                const newChat = await chats.find({_id:message[0]._id}).populate('users');
                 let messagesLocal = newChat[0].messages; 
-                console.log("messagesLocal:", messagesLocal);
-                messagesLocal.push(Message.get('_id'));
-                console.log("messagesLocal:", messagesLocal);
-                const chat = await chats.updateOne({_id:message[0]._id},{$set:{messages:messagesLocal}});
-                // // const Message = await messages.create(message);
-                return Message;
+                const chat = await chats.updateMany({_id:message[0]._id},{$set:{messages:messagesLocal}},{$set:{noOfUnreadMessages:0}});
+                const chatMessage = await chatController.getChatByChatID(message[0]._id);
+                const listOfMessage = chatMessage[0].messages;
+                listOfMessage.map(message => {
+                    message.seen = true;
+                });
+                const updateMessages = chats.updateOne({_id:message[0]._id},{$set:{messages:listOfMessage}});
+                 return Message;
             } catch (error) {
                 console.log("error:", error);
                 
