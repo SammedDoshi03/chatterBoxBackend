@@ -121,7 +121,7 @@ import mongoose, { model } from "mongoose";
                 }
             })
             .exec();
-
+            if(chat[0].messages !== null) {
             //get last message from messages 
             const lastMessage = chat[0].messages[chat[0].messages.length - 1];
             if(lastMessage.seen === false){    
@@ -141,6 +141,7 @@ import mongoose, { model } from "mongoose";
                     chat.noOfUnreadMessages = 0;
                 });
             }
+        }
             return chat;
         } catch (error) {
             throw error;
